@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Timbre Caja</title>
+<style>
+body {
+    font-family: sans-serif;
+    background: #222;
+    color: #fff;
+    text-align: center;
+    padding: 2rem;
+}
+button {
+    font-size: 3rem;
+    padding: 1rem 3rem;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+}
+#btnLlamar {
+    background-color: #4CAF50; /* verde */
+    color: #fff;
+}
+#btnLlamar.detener {
+    background-color: #F44336; /* rojo */
+}
+</style>
+</head>
+<body>
+
+<h1>Timbre de Caja</h1>
+<h2 id="lblCaja"></h2>
+
+<button id="btnLlamar" onclick="toggleLlamado()">Llamar</button>
+
+<script>
+const btn = document.getElementById("btnLlamar");
+
+// ✅ Hardcodear aquí
+const caja = 3;   // ← CAMBIA ESTE NÚMERO PARA CADA CAJA
+
+document.getElementById("lblCaja").textContent = "Caja " + caja;
+
+let llamadaActiva = false;
+
+function toggleLlamado() {
+    if (!llamadaActiva) {
+        // Llamar
+        fetch("http://localhost:3033/llamado", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ caja })
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log("Llamado enviado:", data);
+            llamadaActiva = true;
+            btn.textContent = "Detener";
+            btn.classList.add("detener");
+        })
+        .catch(err => console.error(err));
+    } else {
+        // Detener
+        fetch(`http://localhost:3033/llamado/${caja}`, { method: "DELETE" })
+        .then(() => {
+            console.log("Llamado detenido: Caja", caja);
+            llamadaActiva = false;
+            btn.textContent = "Llamar";
+            btn.classList.remove("detener");
+        })
+        .catch(err => console.error(err));
+    }
+}
+</script>
+
+</body>
+</html>

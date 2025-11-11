@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Pantalla de Llamados</title>
+<style>
+body { 
+    font-family: sans-serif; 
+    background: #111; 
+    color: #FFFF00; 
+    text-align: center; 
+    margin: 0; 
+    padding: 0; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh;
+}
+.llamado { 
+    font-size: 6rem; 
+    margin: 1rem; 
+    padding: 1rem 3rem; 
+    border: 4px solid #FFD700; 
+    border-radius: 20px; 
+    width: 90%; 
+    max-width: 600px;
+}
+</style>
+</head>
+<body>
+<h1>Llamados de Cajas</h1>
+<div id="llamados"></div>
+<audio id="alerta" src="alarm.mp3" preload="auto"></audio>
+
+<script>
+const contenedor = document.getElementById("llamados");
+const sonido = document.getElementById("alerta");
+
+// Intervalos por caja
+let intervalos = {};
+
+function iniciarSonido(caja) {
+    // Siempre sonar al inicio
+    sonido.currentTime = 0;
+    sonido.play();
+
+    // Si ya está en intervalo, no agregar otro
+    if (!intervalos[caja]) {
+        intervalos[caja] = setInterval(() => {
+            sonido.currentTime = 0;
+            sonido.play();
+        }, 16000);
+    }
+}
+
+
+function detenerSonido(caja) {
+    if (intervalos[caja]) {
+        clearInterval(intervalos[caja]);
+        delete intervalos[caja];
+    }
+}
+
+// SSE
+const evtSource = new EventSource("http://localhost:3033/stream");
+
+evtSource.onmessage = (event) => {
+    const llamados = JSON.parse(event.data);
+
+    contenedor.innerHTML = "";
+
+    const cajasActivas = llamados.map(l => l.caja);
+
+    // Detener sonidos de cajas ya eliminadas
+    for (const caja in intervalos) {
+        if (!cajasActivas.includes(Number(caja))) {
+            detenerSonido(caja);
+        }
+    }
+
+    // Mostrar llamados y activar sonidos
+    for (const l of llamados) {
+        const div = document.createElement("div");
+        div.className = "llamado";
+        div.textContent = `Caja ${l.caja} → Hora: ${l.hora}`;
+        contenedor.appendChild(div);
+
+        iniciarSonido(l.caja);
+    }
+};
+</script>
+
+</body>
+</html>
