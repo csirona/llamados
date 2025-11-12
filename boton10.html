@@ -5,11 +5,11 @@
 <title>Llamador</title>
 <style>
     :root {
-        --bg: #0F172A;     /* Slate 900 */
-        --text: #F1F5F9;   /* Slate 100 */
-        --blue: #3B82F6;   /* Blue 500 */
-        --green: #10B981;  /* Green 500 */
-        --red: #EF4444;    /* Red 500 */
+        --bg: #0F172A;
+        --text: #F1F5F9;
+        --blue: #3B82F6;
+        --green: #10B981;
+        --red: #EF4444;
     }
 
     body {
@@ -29,13 +29,20 @@
     h1 {
         margin-bottom: 15px;
         font-weight: 500;
+        font-size: 2.6rem;
     }
 
     .infoCaja {
-        margin-bottom: 40px;
+        margin-bottom: 20px;
         font-size: 2rem;
         opacity: 0.85;
         font-weight: 600;
+    }
+
+    #hora {
+        font-size: 1.6rem;
+        margin-bottom: 40px;
+        opacity: 0.7;
     }
 
     .botones {
@@ -75,7 +82,6 @@
         background: var(--red);
         display: none;
     }
-
 </style>
 </head>
 <body>
@@ -83,6 +89,7 @@
 <h1>Llamador de Caja</h1>
 
 <div class="infoCaja" id="infoCaja">Caja: --</div>
+<div id="hora">--:--:--</div>
 
 <div class="botones" id="opciones">
     <button class="btn-con" onclick="llamar('CON CARRO')">LLAMAR CON CARRO</button>
@@ -92,12 +99,40 @@
 <button class="btn-detener" id="btnDetener" onclick="desactivar()">DETENER</button>
 
 <script>
-/*  ✅ CONFIGURA AQUÍ EL NÚMERO DE LA CAJA  */
-const CAJA_NUM = 3;   // <<< CAMBIA ESTE VALOR
+/* ✅ CONFIGURA AQUÍ EL NÚMERO DE LA CAJA */
+const CAJA_NUM = 7;   // <<< CAMBIA AQUÍ
 
 document.getElementById("infoCaja").textContent = "Caja: " + CAJA_NUM;
 
-let ultimaCaja = CAJA_NUM;
+/* ✅ Mostrar reloj */
+function actualizarHora() {
+    const h = new Date();
+    const hora = h.toLocaleTimeString("es-CL", { hour12: false });
+    document.getElementById("hora").textContent = hora;
+}
+setInterval(actualizarHora, 1000);
+actualizarHora();
+
+/* ✅ Mantener máximo 9 llamados en el servidor */
+async function normalizarMaximo9() {
+    try {
+        const resp = await fetch("http://localhost:3033/listado");
+        let datos = await resp.json();
+
+        if (datos.length > 9) {
+            // orden asc + eliminar los más antiguos
+            let eliminar = datos.slice(0, datos.length - 9);
+
+            for (const x of eliminar) {
+                await fetch(`http://localhost:3033/llamado/${x.caja}`, {
+                    method: "DELETE"
+                });
+            }
+        }
+    } catch (e) {
+        console.warn("No se pudo validar límite 9", e);
+    }
+}
 
 async function llamar(tipo) {
     await fetch("http://localhost:3033/llamado", {
@@ -106,14 +141,14 @@ async function llamar(tipo) {
         body: JSON.stringify({ caja: CAJA_NUM, tipo })
     });
 
+    await normalizarMaximo9();
+
     document.getElementById("opciones").style.display = "none";
     document.getElementById("btnDetener").style.display = "block";
 }
 
 async function desactivar() {
-    await fetch(`http://localhost:3033/llamado/${CAJA_NUM}`, {
-        method: "DELETE"
-    });
+    await fetch(`http://localhost:3033/llamado/${CAJA_NUM}`, { method: "DELETE" });
 
     document.getElementById("opciones").style.display = "flex";
     document.getElementById("btnDetener").style.display = "none";

@@ -34,16 +34,17 @@ function notifyAll() {
     }
 }
 
-// Crear un llamado (solo caja y hora)
+// Crear un llamado (caja + hora + tipo)
 app.post("/llamado", (req, res) => {
-    const { caja } = req.body;
+    const { caja, tipo } = req.body;
     if (!caja) return res.status(400).json({ message: "Se requiere número de caja" });
 
     const hora = new Date().toLocaleTimeString();
-    llamados.push({ caja, hora });
+    llamados.push({ caja, hora, tipo });
     notifyAll();
-    res.status(201).json({ message: "Llamado creado", caja, hora });
+    res.status(201).json({ message: "Llamado creado", caja, hora, tipo });
 });
+
 
 // Desactivar llamado enviando solo el número de caja
 app.delete("/llamado/:caja", (req, res) => {
